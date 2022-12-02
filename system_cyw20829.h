@@ -1,6 +1,6 @@
 /***************************************************************************//**
 * \file system_cyw20829.h
-* \version 1.0
+* \version 1.2
 *
 * \brief Device system header file.
 *
@@ -214,6 +214,16 @@
 *       <th>Reason for Change</th>
 *   </tr>
 *   <tr>
+*       <td>1.2</td>
+*       <td>Added new internal functions.</td>
+*       <td>Added support for DSRAM Setup for CAT1B devices.</td>
+*   </tr>
+*   <tr>
+*       <td>1.1</td>
+*       <td>Restructured documentation and internal function behaviour.</td>
+*       <td>User experience enhancement.</td>
+*   </tr>
+*   <tr>
 *       <td>1.0</td>
 *       <td>Initial version</td>
 *       <td></td>
@@ -221,24 +231,11 @@
 * </table>
 *
 *
-* \defgroup group_system_config_macro_cm33 Macro
+* \defgroup group_system_config_macro_cm33 Macros
 * \{
-*   \defgroup group_system_config_system_macro_cm33            System
+*   \defgroup group_system_config_system_macro_cm33            System Macros
 * \}
-* \defgroup group_system_config_functions_cm33 Functions
-* \{
-*   \defgroup group_system_config_system_functions_cm33        System
-* \}
-* \defgroup group_system_config_globals_cm33 Global Variables
 *
-* \}
-*/
-
-/**
-* \addtogroup group_system_config_system_functions_cm33
-* \{
-*   \details
-*   The following system functions implement CMSIS Core functions.
 * \}
 */
 
@@ -278,36 +275,26 @@ extern "C" {
 /** \} group_system_config_system_macro_cm33 */
 
 
-/**
-* \addtogroup group_system_config_system_functions_cm33
-* \{
-*/
-void SystemInit_CAT1B_CM33(void);
-
-extern void SystemCoreClockUpdate(void);
-/** \} group_system_config_system_functions */
-
 /** \cond */
+void SystemInit(void);
+void SystemInit_Warmboot_CAT1B_CM33(void);
+void System_Store_NVIC_Reg(void);
+void System_Restore_NVIC_Reg(void);
+extern void SystemCoreClockUpdate(void);
+
 extern void     Cy_SystemInit(void);
 extern void     bootstrapInit(void);
 
 extern uint32_t cy_delayFreqHz;
 extern uint32_t cy_delayFreqKhz;
 extern uint8_t  cy_delayFreqMhz;
-extern uint32_t cy_delay32kMs;
-/** \endcond */
-
-
-
-/** \addtogroup group_system_config_globals_cm33
-* \{
-*/
 
 extern uint32_t SystemCoreClock;
 extern uint32_t cy_Hfclk0FreqHz;
 extern uint32_t cy_PeriClkFreqHz;
+extern uint32_t cy_AhbFreqHz;
 
-/** \} group_system_config_globals_cm33 */
+/** \endcond */
 
 #ifdef __cplusplus
 }

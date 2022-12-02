@@ -1,6 +1,6 @@
 /***************************************************************************//**
 * \file startup_cat1b.h
-* \version 1.0
+* \version 1.1
 *
 * \brief Common startup header file for CAT1B devices. This file provides
 * declarations for secure and non-secure vector table.
@@ -27,29 +27,25 @@
 #ifndef STARTUP_CAT1B_H_
 #define STARTUP_CAT1B_H_
 
-#if defined(CY_DEVICE_CYW20829)
-    #include "cyw20829_config.h"
-#elif defined(PLAYER_PSVP)
-    #include "player_partition.h"
-#endif
-
 #if defined (CY_DEVICE_CYW20829) /* Declarations for CYW20829 */
+
+#include "cyw20829_config.h"
 
 #define CM33_FIXED_EXP_NR       (15u)
 #define VECTORTABLE_SIZE        (MXCM33_SYSTEM_INT_NR + CM33_FIXED_EXP_NR + 1u) /* +1 is for Stack pointer */
 #define VECTORTABLE_ALIGN       (512) /* alignment for 85 entries (85x4=340) is 512 bytes */
 
-#if defined(__ARMCC_VERSION) || defined (CY_DOXYGEN)
+#if defined(__ARMCC_VERSION)
     #define interrupt_type __attribute__((interrupt))
     typedef void(* ExecFuncPtrRw)(void) interrupt_type;
     typedef  void(* const ExecFuncPtr)(void) interrupt_type;     /* typedef for the function pointers in the vector table */
     extern ExecFuncPtrRw __ns_vector_table_rw[VECTORTABLE_SIZE] __attribute__( ( section(".bss.noinit.RESET_RAM"))) __attribute__((aligned(VECTORTABLE_ALIGN)));  /**< Non-secure vector table in flash/ROM */
-#elif defined (__GNUC__) || defined (CY_DOXYGEN)
+#elif defined (__GNUC__)
     #define interrupt_type __attribute__((interrupt))
     typedef void(* interrupt_type ExecFuncPtrRw)(void);
     typedef void(* interrupt_type ExecFuncPtr)(void) ;           /* typedef for the function pointers in the vector table */
     extern ExecFuncPtrRw __ns_vector_table_rw[VECTORTABLE_SIZE]   __attribute__( ( section(".ram_vectors"))) __attribute__((aligned(VECTORTABLE_ALIGN)));  /**< Non-secure vector table in flash/ROM */
-#elif defined (__ICCARM__) || defined (CY_DOXYGEN)
+#elif defined (__ICCARM__)
     #define interrupt_type __irq
     typedef interrupt_type void(* ExecFuncPtrRw)(void) ;
     typedef interrupt_type void(* const ExecFuncPtr)(void) ;     /* typedef for the function pointers in the vector table */
@@ -58,48 +54,7 @@
     #error "An unsupported toolchain"
 #endif  /* (__ARMCC_VERSION) */
 extern ExecFuncPtr __ns_vector_table[]; /**< Non-secure vector table in non-secure SRAM */
-#endif
-
-#if defined (CY_DOXYGEN) || defined (PLAYER_PSVP) /* Declarations for PLAYER_PSVP */
-#if defined (CY_SECURE_WORLD) || defined (CY_DOXYGEN) /* Declarations for secure world */
-#ifdef ARM_TOOL_CHAIN
-    #define interrupt_type __attribute__((interrupt))
-    typedef void(* const ExecFuncPtr)(void) interrupt_type; /* typedef for the function pointers in the vector table */
-    typedef void(* ExecFuncPtrRw)(void) interrupt_type;
-    extern ExecFuncPtrRw __s_vector_table_rw[VECTORTABLE_SIZE]    __attribute__( ( section( ".bss.noinit"))) __attribute__((aligned(VECTORTABLE_ALIGN))); /**< Secure vector table in flash/ROM */
-#elif GCC_TOOL_CHAIN
-    #define interrupt_type __attribute__((interrupt))
-    typedef void(* interrupt_type ExecFuncPtr)(void) ;           /* typedef for the function pointers in the vector table */
-    typedef void(* interrupt_type ExecFuncPtrRw)(void);
-    extern ExecFuncPtrRw __s_vector_table_rw[VECTORTABLE_SIZE]   __attribute__( ( section(".noinit"))) __attribute__((aligned(VECTORTABLE_ALIGN))); /**< Secure vector table in flash/ROM */
-#else
-    #define interrupt_type __irq
-    typedef interrupt_type void(* const ExecFuncPtr)(void) ; /* typedef for the function pointers in the vector table */
-    typedef interrupt_type void(* ExecFuncPtrRw)(void) ;
-    extern ExecFuncPtrRw __s_vector_table_rw[VECTORTABLE_SIZE]   __attribute__( ( section(".noinit"))) __attribute__((aligned(VECTORTABLE_ALIGN))); /**< Secure vector table in flash/ROM */
-#endif
-extern ExecFuncPtr __s_vector_table[] ; /**< secure vector table in secure SRAM */
-#endif
-#if (!defined (CY_SECURE_WORLD)) || defined (CY_DOXYGEN) /* Declarations for non-secure world */
-#ifdef ARM_TOOL_CHAIN
-    #define interrupt_type __attribute__((interrupt))
-    typedef  void(* const ExecFuncPtr)(void) interrupt_type;     /* typedef for the function pointers in the vector table */
-    typedef void(* ExecFuncPtrRw)(void) interrupt_type;
-    extern ExecFuncPtrRw __ns_vector_table_rw[VECTORTABLE_SIZE]    __attribute__( ( section( ".bss.noinit"))) __attribute__((aligned(VECTORTABLE_ALIGN)));
-#elif GCC_TOOL_CHAIN
-    #define interrupt_type __attribute__((interrupt))
-    typedef void(* interrupt_type ExecFuncPtr)(void) ;           /* typedef for the function pointers in the vector table */
-    typedef void(* interrupt_type ExecFuncPtrRw)(void);
-    extern ExecFuncPtrRw __ns_vector_table_rw[VECTORTABLE_SIZE]   __attribute__( ( section(".noinit"))) __attribute__((aligned(VECTORTABLE_ALIGN)));
-#else
-    #define interrupt_type __irq
-    typedef interrupt_type void(* const ExecFuncPtr)(void) ;     /* typedef for the function pointers in the vector table */
-    typedef interrupt_type void(* ExecFuncPtrRw)(void) ;
-    extern ExecFuncPtrRw __ns_vector_table_rw[VECTORTABLE_SIZE]   __attribute__( ( section(".noinit"))) __attribute__((aligned(VECTORTABLE_ALIGN)));
-#endif
-extern ExecFuncPtr __ns_vector_table[]; /**< Non-secure vector table in non-secure SRAM */
-#endif
-#endif
+#endif /* CY_DEVICE_CYW20829 */
 
 #endif /* STARTUP_CAT1B_H_ */
 

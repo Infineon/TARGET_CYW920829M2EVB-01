@@ -1,6 +1,5 @@
 ### CYW920829M2EVB-01 BSP
-The Infineon AIROC™ CYW20829 Bluetooth® LE evaluation kit (CYW92089M2EVB-01) enables evaluation, prototyping, and development of a wide array of IoT applications using the AIROC™ CYW20829, a low power and high performance Bluetooth® LE MCU.
-    
+The Infineon AIROC™ CYW20829 Bluetooth® LE evaluation kit (CYW92089M2EVB-01) enables evaluation, prototyping, and development of a wide array of IoT applications using the AIROC™ CYW20829, a low power and high performance Bluetooth® LE MCU.     
 
 NOTE: BSPs are versioned by family. This means that version 1.2.0 of any BSP in a family (eg: PSoC™ 6) will have the same software maturity level. However, not all updates are necessarily applicable for each BSP in the family so not all version numbers will exist for each board. Additionally, new BSPs may not start at version 1.0.0. In the event of adding a common feature across all BSPs, the libraries are assigned the same version number. For example if BSP_A is at v1.3.0 and BSP_B is at v1.2.0, the event will trigger a version update to v1.4.0 for both BSP_A and BSP_B. This allows the common feature to be tracked in a consistent way.
 
@@ -15,6 +14,9 @@ The CYW920829M2EVB-01 library includes the following:
 * API documentation
 
 ### What Changed?
+#### v1.0.0 Beta 1
+Note: This revision is only compatible with ModusToolbox Tools 3.0 and newer.
+* Updated pre-production release supporting ModusToolbox 3.0.
 #### v0.5.0
 * Initial pre-production release
 
@@ -23,12 +25,12 @@ This version of the CYW920829M2EVB-01 BSP was validated for compatibility with t
 
 | Software and Tools                        | Version |
 | :---                                      | :----:  |
-| ModusToolbox™ Software Environment        | 2.4.0   |
+| ModusToolbox™ Software Environment        | 3.0.0   |
 | GCC Compiler                              | 10.3.1  |
-| IAR Compiler                              | 8.4     |
-| ARM Compiler                              | 6.11    |
+| IAR Compiler                              | 9.30.1  |
+| ARM Compiler                              | 6.16    |
 
-Minimum required ModusToolbox™ Software Environment: v2.4.0
+Minimum required ModusToolbox™ Software Environment: v3.0.0
 
 ### More information
 * [CYW920829M2EVB-01 BSP API Reference Manual][api]
@@ -40,4 +42,4 @@ Minimum required ModusToolbox™ Software Environment: v2.4.0
 [api]: https://infineon.github.io/TARGET_CYW920829M2EVB-01/html/modules.html
 
 ---
-© Cypress Semiconductor Corporation (an Infineon company) or an affiliate of Cypress Semiconductor Corporation, 2019-2021.
+© Cypress Semiconductor Corporation (an Infineon company) or an affiliate of Cypress Semiconductor Corporation, 2019-2022.

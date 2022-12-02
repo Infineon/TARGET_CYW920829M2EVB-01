@@ -1,6 +1,6 @@
 /***************************************************************************//**
 * \file ns_system_cyw20829.c
-* \version 1.0
+* \version 1.2
 *
 * The device system-source file.
 *
@@ -47,31 +47,15 @@ CY_MISRA_FP_BLOCK_START('MISRA C-2012 Rule 8.6', 2, \
 *******************************************************************************/
 
 /** Default HFClk frequency in Hz */
-#define CY_CLK_HFCLK0_FREQ_HZ_DEFAULT       (8000000UL)
+#define CY_CLK_HFCLK0_FREQ_HZ_DEFAULT       (48000000UL)
 
 /** Default PeriClk frequency in Hz */
-#define CY_CLK_PERICLK_FREQ_HZ_DEFAULT      (8000000UL)
+#define CY_CLK_PERICLK_FREQ_HZ_DEFAULT      (48000000UL)
 
 /** Default system core frequency in Hz */
-#define CY_CLK_SYSTEM_FREQ_HZ_DEFAULT       (8000000UL)
+#define CY_CLK_SYSTEM_FREQ_HZ_DEFAULT       (48000000UL)
 
-/** Default PSVP FLL frequency in Hz */
-#define CY_SYSCLK_PSVP_FLL_FREQ             (48000000UL)
-
-/**
-* Holds the (Cortex-M33) system core clock,
-* which is the system clock frequency supplied to the SysTick timer and the
-* processor core clock.
-* This variable implements CMSIS Core global variable.
-* Refer to the [CMSIS documentation]
-* (http://www.keil.com/pack/doc/CMSIS/Core/html/group__system__init__gr.html "System and Clock Configuration")
-* for more details.
-* This variable can be used by debuggers to query the frequency
-* of the debug timer or to configure the trace clock speed.
-*
-* \attention Compilers must be configured to avoid removing this variable in case
-* the application program is not using it. Debugging systems require the variable
-* to be physically present in memory so that it can be examined to configure the debugger. */
+/** Holds the CLK_HF0 system core clock. */
 uint32_t SystemCoreClock = CY_CLK_SYSTEM_FREQ_HZ_DEFAULT;
 
 /** Holds the HFClk0 clock frequency. Updated by \ref SystemCoreClockUpdate(). */
@@ -79,6 +63,9 @@ uint32_t cy_Hfclk0FreqHz  = CY_CLK_HFCLK0_FREQ_HZ_DEFAULT;
 
 /** Holds the PeriClk clock frequency. Updated by \ref SystemCoreClockUpdate(). */
 uint32_t cy_PeriClkFreqHz = CY_CLK_PERICLK_FREQ_HZ_DEFAULT;
+
+/** Holds the AHB frequency. Updated by \ref SystemCoreClockUpdate(). */
+uint32_t cy_AhbFreqHz = CY_CLK_SYSTEM_FREQ_HZ_DEFAULT;
 
 /*******************************************************************************
 * SystemCoreClockUpdate (void)
@@ -98,10 +85,8 @@ uint32_t cy_delayFreqKhz  = (CY_CLK_SYSTEM_FREQ_HZ_DEFAULT + CY_DELAY_1K_MINUS_1
 uint8_t cy_delayFreqMhz  = (uint8_t)((CY_CLK_SYSTEM_FREQ_HZ_DEFAULT + CY_DELAY_1M_MINUS_1_THRESHOLD) /
                             CY_DELAY_1M_THRESHOLD);
 
-uint32_t cy_delay32kMs    = CY_DELAY_MS_OVERFLOW_THRESHOLD *
-                            ((CY_CLK_SYSTEM_FREQ_HZ_DEFAULT + CY_DELAY_1K_MINUS_1_THRESHOLD) / CY_DELAY_1K_THRESHOLD);
 
-#if defined (FLASH_BOOT)
+#if defined (CY_PDL_FLASH_BOOT)
 
 #if !defined (__ARMCC_VERSION)
 void bootstrapInit(void)
@@ -125,19 +110,8 @@ void bootstrapInit(void)
     }
 }
 #endif
-#endif /* FLASH_BOOT */
+#endif /* CY_PDL_FLASH_BOOT */
 
-/*******************************************************************************
-* Function Name: SystemInit_CAT1B_CM33
-****************************************************************************//**
-*
-* Initializes the system:
-* - Unlocks and disables WDT.
-* - Calls Cy_PDL_Init() function to define the driver library.
-* - Calls the Cy_SystemInit() function.
-* - Calls \ref SystemCoreClockUpdate().
-*
-*******************************************************************************/
 void SystemInit_CAT1B_CM33(void)
 {
     /* Release reset for all groups IP except group 0 */
@@ -172,6 +146,71 @@ void SystemInit_CAT1B_CM33(void)
     SystemCoreClockUpdate();
 }
 
+CY_SECTION_RAMFUNC_BEGIN
+/*******************************************************************************
+* Function Name: SystemInit_Warmboot_CAT1B_CM33
+****************************************************************************//**
+*
+* Prepares the system to work after warmboot:
+* - Intializes Vector Table
+* - Enables all the IP's through Slave Control Registers
+* - Unfreezes the IO's
+*
+*******************************************************************************/
+void SystemInit_Warmboot_CAT1B_CM33()
+{
+    SCB->VTOR = (uint32_t)__ns_vector_table_rw;
+    (void)Cy_SysClk_PeriGroupSetSlaveCtl(1, CY_SYSCLK_PERI_GROUP_SL_CTL2, 0x0U);
+    (void)Cy_SysClk_PeriGroupSetSlaveCtl(2, CY_SYSCLK_PERI_GROUP_SL_CTL2, 0x0U);
+    (void)Cy_SysClk_PeriGroupSetSlaveCtl(1, CY_SYSCLK_PERI_GROUP_SL_CTL, 0xFFFFFFFFU);
+    (void)Cy_SysClk_PeriGroupSetSlaveCtl(2, CY_SYSCLK_PERI_GROUP_SL_CTL, 0xFFFFFFFFU);
+    (void)Cy_SysClk_PeriGroupSetSlaveCtl(3, CY_SYSCLK_PERI_GROUP_SL_CTL, 0xFFFFFFFFU);
+
+    if (Cy_SysPm_DeepSleepIoIsFrozen())
+    {
+        Cy_SysPm_DeepSleepIoUnfreeze();
+    }
+}
+CY_SECTION_RAMFUNC_END
+
+#define CY_NVIC_REG_COUNT 3U
+uint32_t nvicStoreRestore[CY_NVIC_REG_COUNT];
+
+/*******************************************************************************
+* Function Name: System_Store_NVIC_Reg
+****************************************************************************//**
+*
+* Stores the NVIC register before Deepsleep RAM:
+*
+*******************************************************************************/
+void System_Store_NVIC_Reg(void)
+{
+    for (uint32_t idx = 0; idx < CY_NVIC_REG_COUNT; idx++)
+    {
+        nvicStoreRestore[idx] = NVIC->ISER[idx];
+    }
+}
+
+
+/*******************************************************************************
+* Function Name: System_Restore_NVIC_Reg
+****************************************************************************//**
+*
+* Restores the NVIC register After Deepsleep RAM Wakeup i.e. Warmboot:
+*
+*******************************************************************************/
+void System_Restore_NVIC_Reg(void)
+{
+    for (uint32_t idx = 0; idx < CY_NVIC_REG_COUNT; idx++)
+    {
+        NVIC->ISER[idx] = nvicStoreRestore[idx];
+    }
+}
+void SystemInit(void)
+{
+    SystemInit_CAT1B_CM33();
+};
+
 /*******************************************************************************
 * Function Name: Cy_SystemInit
 ****************************************************************************//**
@@ -190,11 +229,7 @@ __WEAK void Cy_SystemInit(void)
 * Function Name: SystemCoreClockUpdate
 ****************************************************************************//**
 *
-* Gets core clock frequency and updates \ref SystemCoreClock, \ref
-* cy_Hfclk0FreqHz, and \ref cy_PeriClkFreqHz.
-*
-* Updates global variables used by the \ref Cy_SysLib_Delay(), \ref
-* Cy_SysLib_DelayUs(), and \ref Cy_SysLib_DelayCycles().
+* The function is called during device startup.
 *
 *******************************************************************************/
 void SystemCoreClockUpdate (void)
@@ -222,7 +257,9 @@ void SystemCoreClockUpdate (void)
     cy_delayFreqHz = SystemCoreClock;
     cy_delayFreqMhz = (uint8_t)((cy_delayFreqHz + CY_DELAY_1M_MINUS_1_THRESHOLD) / CY_DELAY_1M_THRESHOLD);
     cy_delayFreqKhz = (cy_delayFreqHz + CY_DELAY_1K_MINUS_1_THRESHOLD) / CY_DELAY_1K_THRESHOLD;
-    cy_delay32kMs   = CY_DELAY_MS_OVERFLOW_THRESHOLD * cy_delayFreqKhz;
+
+    /* Get the frequency of AHB source, CLK HF0 is the source for AHB*/
+    cy_AhbFreqHz = Cy_SysClk_ClkHfGetFrequency(0UL);
 }
 
 CY_MISRA_BLOCK_END('MISRA C-2012 Rule 8.6');

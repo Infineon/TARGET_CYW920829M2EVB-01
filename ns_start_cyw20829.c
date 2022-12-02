@@ -1,6 +1,6 @@
 /***************************************************************************//**
 * \file ns_start_cyw20829.c
-* \version 1.0
+* \version 1.1
 *
 * The cyw20829 startup source.
 *
@@ -64,6 +64,8 @@ interrupt_type void NMIException_Handler(void);
 interrupt_type void HardFault_Handler(void);
 void delay_infinite(void);
 void SysLib_FaultHandler(uint32_t const *faultStackAddr);
+__WEAK void cy_toolchain_init(void);
+
 extern int main(void);
 
 #if defined (__ARMCC_VERSION)
@@ -394,6 +396,44 @@ ExecFuncPtr __ns_vector_table[] __VECTOR_TABLE_ATTRIBUTE = {
     (ExecFuncPtr)InterruptHandler
 };
 
+
+/* Provide empty __WEAK implementation for the low-level initialization
+   routine required by the RTOS-enabled applications.
+   clib-support library provides FreeRTOS-specific implementation:
+   https://github.com/Infineon/clib-support */
+void cy_toolchain_init(void);
+__WEAK void cy_toolchain_init(void)
+{
+}
+
+#if defined(__GNUC__) && !defined(__ARMCC_VERSION)
+/* GCC: newlib crt0 _start executes software_init_hook.
+   The cy_toolchain_init hook provided by clib-support library must execute
+   after static data initialization and before static constructors. */
+void software_init_hook();
+void software_init_hook()
+{
+    cy_toolchain_init();
+}
+#elif defined(__ICCARM__)
+/* Initialize data section */
+void __iar_data_init3(void);
+
+/* Call the constructors of all global objects */
+void __iar_dynamic_initialization(void);
+
+/* Define strong version to return zero for __iar_program_start
+   to skip data sections initialization (__iar_data_init3). */
+int __low_level_init(void);
+int __low_level_init(void)
+{
+    return 0;
+}
+#else
+/**/
+#endif /* defined(__GNUC__) && !defined(__ARMCC_VERSION) */
+
+
 // Reset Handler
 __WEAK interrupt_type void Reset_Handler(void)
 {
@@ -416,12 +456,23 @@ __WEAK interrupt_type void Reset_Handler(void)
     SCB->VTOR = (uint32_t)__ns_vector_table_rw;
     __DMB();
 
-#ifdef FLASH_BOOT
+#ifdef CY_PDL_FLASH_BOOT
 #if !defined (__ARMCC_VERSION)
     bootstrapInit();
 #endif
 #endif
-    SystemInit_CAT1B_CM33();
+    SystemInit();
+
+#if defined(__ICCARM__)
+    /* Initialize data section */
+    __iar_data_init3();
+
+    /* Initialization hook for RTOS environment  */
+    cy_toolchain_init();
+
+    /* Call the constructors of all global objects */
+    __iar_dynamic_initialization();
+#endif
 
    __PROGRAM_START();
 }

@@ -7,7 +7,7 @@
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2021 Cypress Semiconductor Corporation (an Infineon company) or
+* Copyright 2018-2022 Cypress Semiconductor Corporation (an Infineon company) or
 * an affiliate of Cypress Semiconductor Corporation
 *
 * SPDX-License-Identifier: Apache-2.0
@@ -33,6 +33,7 @@
 #include "cyhal_hwmgr.h"
 #include "cyhal_syspm.h"
 #endif
+#include "cybsp_dsram.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -44,6 +45,8 @@ extern "C" {
 #ifndef CYBSP_SYSCLK_PM_CALLBACK_ORDER
     #define CYBSP_SYSCLK_PM_CALLBACK_ORDER  (255u)
 #endif
+
+
 
 #if !defined(CYBSP_CUSTOM_SYSCLK_PM_CALLBACK)
 //--------------------------------------------------------------------------------------------------
@@ -60,7 +63,11 @@ static cy_rslt_t cybsp_register_sysclk_pm_callback(void)
     static cy_stc_syspm_callback_t        cybsp_sysclk_pm_callback       =
     {
         .callback       = &Cy_SysClk_DeepSleepCallback,
-        .type           = CY_SYSPM_DEEPSLEEP,
+        #if (CY_CFG_PWR_SYS_IDLE_MODE == CY_CFG_PWR_MODE_DEEPSLEEP_RAM)
+        .type           = (cy_en_syspm_callback_type_t)CY_SYSPM_MODE_DEEPSLEEP_RAM,
+        #else
+        .type           = (cy_en_syspm_callback_type_t)CY_SYSPM_MODE_DEEPSLEEP,
+        #endif
         .callbackParams = &cybsp_sysclk_pm_callback_param,
         .order          = CYBSP_SYSCLK_PM_CALLBACK_ORDER
     };
@@ -102,9 +109,7 @@ cy_rslt_t cybsp_init(void)
     cy_rslt_t result = CY_RSLT_SUCCESS;
     #endif // if defined(CY_USING_HAL)
 
-    #if defined(COMPONENT_BSP_DESIGN_MODUS) || defined(COMPONENT_CUSTOM_DESIGN_MODUS)
     init_cycfg_all();
-    #endif
 
     if (CY_RSLT_SUCCESS == result)
     {
@@ -113,6 +118,11 @@ cy_rslt_t cybsp_init(void)
         #else
         result = cybsp_register_sysclk_pm_callback();
         #endif
+    }
+
+    if (CY_RSLT_SUCCESS == result)
+    {
+        result = cybsp_syspm_dsram_init();
     }
 
     // CYHAL_HWMGR_RSLT_ERR_INUSE result could be returned if any resourced needed for the BSP was

@@ -1,13 +1,12 @@
 /***************************************************************************//**
 * \file system_cat1b.h
-* \version 1.0
+* \version 1.2
 *
 * \brief CAT1B Device system header file.
 *
 ********************************************************************************
 * \copyright
-* Copyright (c) (2020-2022), Cypress Semiconductor Corporation (an Infineon company) or
-* an affiliate of Cypress Semiconductor Corporation.
+* Copyright 2016-2021 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +21,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
+
 
 #ifndef _SYSTEM_CAT1B_H_
 #define _SYSTEM_CAT1B_H_
